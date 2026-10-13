@@ -1,0 +1,21 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="60" cy="60" r="57" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="2"/>
+  <rect x="30" y="29" width="60" height="5" rx="2.5" fill="#2563EB"/>
+  <rect x="32" y="48" width="56" height="42" fill="#DBEAFE"/>
+  <rect x="52" y="62" width="16" height="28" rx="2" fill="#2563EB"/>
+  <rect x="38" y="60" width="10" height="10" rx="2" fill="#FFFFFF" stroke="#2563EB" stroke-width="2"/>
+  <rect x="72" y="60" width="10" height="10" rx="2" fill="#FFFFFF" stroke="#2563EB" stroke-width="2"/>
+  <rect x="26" y="90" width="68" height="5" rx="2.5" fill="#2563EB"/>
+  <polygon points="34,34 42.67,34 38.67,50 28,50" fill="#F59E0B"/>
+  <polygon points="42.67,34 51.33,34 49.33,50 38.67,50" fill="#2563EB"/>
+  <polygon points="51.33,34 60,34 60,50 49.33,50" fill="#F59E0B"/>
+  <polygon points="60,34 68.67,34 70.67,50 60,50" fill="#2563EB"/>
+  <polygon points="68.67,34 77.33,34 81.33,50 70.67,50" fill="#F59E0B"/>
+  <polygon points="77.33,34 86,34 92,50 81.33,50" fill="#2563EB"/>
+  <circle cx="33.33" cy="50" r="5.3" fill="#F59E0B"/>
+  <circle cx="44" cy="50" r="5.3" fill="#2563EB"/>
+  <circle cx="54.67" cy="50" r="5.3" fill="#F59E0B"/>
+  <circle cx="65.33" cy="50" r="5.3" fill="#2563EB"/>
+  <circle cx="76" cy="50" r="5.3" fill="#F59E0B"/>
+  <circle cx="86.67" cy="50" r="5.3" fill="#2563EB"/>
+</svg>
