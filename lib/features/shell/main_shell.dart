@@ -1,0 +1,42 @@
+import 'package:flutter/material.dart';
+
+import '../../core/storage/app_prefs.dart';
+import '../home/home_screen.dart';
+import '../inventory/inventory_screen.dart';
+import '../more/more_screen.dart';
+import '../pos/pos_screen.dart';
+import '../utang/utang_screen.dart';
+import 'store_bottom_bar.dart';
+
+class MainShell extends StatefulWidget {
+  final AppPrefs prefs;
+  const MainShell({super.key, required this.prefs});
+
+  @override
+  State<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends State<MainShell> {
+  // 0 Home, 1 Inventory, 2 POS, 3 Utang, 4 More
+  int _index = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _index,
+        children: [
+          HomeScreen(prefs: widget.prefs),
+          const InventoryScreen(),
+          const PosScreen(),
+          const UtangScreen(),
+          const MoreScreen(),
+        ],
+      ),
+      bottomNavigationBar: StoreBottomBar(
+        currentIndex: _index,
+        onTap: (i) => setState(() => _index = i),
+      ),
+    );
+  }
+}

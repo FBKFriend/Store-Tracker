@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/storage/app_prefs.dart';
 import '../../core/widgets/app_logo.dart';
-import '../home/home_screen.dart';
+import '../shell/main_shell.dart';
 
 class LoginScreen extends StatelessWidget {
   final AppPrefs prefs;
@@ -35,7 +35,7 @@ class LoginScreen extends StatelessWidget {
     await prefs.setAuthMode(AuthMode.guest);
     if (!context.mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => HomeScreen(prefs: prefs)),
+      MaterialPageRoute(builder: (_) => MainShell(prefs: prefs)),
     );
   }
 
