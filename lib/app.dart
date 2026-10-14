@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/widgets/app_logo.dart';
+import 'features/splash/splash_screen.dart';
 
 class StoreApp extends StatelessWidget {
   const StoreApp({super.key});
@@ -14,7 +15,7 @@ class StoreApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system, // follows the phone for now
-      home: const _PlaceholderHome(),
+      home: const SplashScreen(next: _PlaceholderHome()),
     );
   }
 }
