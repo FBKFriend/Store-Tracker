@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
 
+import 'core/storage/app_prefs.dart';
 import 'core/theme/app_theme.dart';
-import 'core/widgets/app_logo.dart';
+import 'features/auth/login_screen.dart';
+import 'features/home/home_screen.dart';
+import 'features/legal/terms_screen.dart';
 import 'features/splash/splash_screen.dart';
 
 class StoreApp extends StatelessWidget {
-  const StoreApp({super.key});
+  final AppPrefs prefs;
+  const StoreApp({super.key, required this.prefs});
+
+  Widget _startScreen() {
+    if (!prefs.termsAccepted) return TermsScreen(prefs: prefs);
+    if (prefs.authMode == AuthMode.none) return LoginScreen(prefs: prefs);
+    return HomeScreen(prefs: prefs);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,31 +24,8 @@ class StoreApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system, // follows the phone for now
-      home: const SplashScreen(next: _PlaceholderHome()),
-    );
-  }
-}
-
-class _PlaceholderHome extends StatelessWidget {
-  const _PlaceholderHome();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const AppLogo(size: 140),
-            const SizedBox(height: 16),
-            Text(
-              'My Sari-Sari Store',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-          ],
-        ),
-      ),
+      themeMode: ThemeMode.system,
+      home: SplashScreen(next: _startScreen()),
     );
   }
 }
