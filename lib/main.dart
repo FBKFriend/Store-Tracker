@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'app.dart';
+import 'core/storage/app_prefs.dart';
 
-void main() {
-  runApp(const StoreApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await AppPrefs.load();
+  runApp(StoreApp(prefs: prefs));
 }
