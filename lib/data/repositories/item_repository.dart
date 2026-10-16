@@ -32,7 +32,27 @@ class ItemRepository extends ChangeNotifier {
   Future<void> load() async {
     final db = await _db.database;
     final rows = await db.rawQuery(_selectSql);
-    _items = rows.map(Item.fromMap).toList();
+    final lotRows = await db.query(
+      'stock_lots',
+      columns: ['item_id', 'qty_remaining', 'selling_price'],
+      where: 'qty_remaining > 0',
+      orderBy: 'item_id, id',
+    );
+    final tiers = <int, List<StockTier>>{};
+    for (final r in lotRows) {
+      tiers
+          .putIfAbsent(r['item_id'] as int, () => [])
+          .add(
+            StockTier(
+              qty: r['qty_remaining'] as int,
+              price: r['selling_price'] as int,
+            ),
+          );
+    }
+    _items = rows.map((r) {
+      final item = Item.fromMap(r);
+      return item.copyWithTiers(tiers[item.id] ?? const []);
+    }).toList();
     notifyListeners();
   }
 
