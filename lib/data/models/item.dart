@@ -41,6 +41,10 @@ class Item {
   bool get priceChangePending =>
       quantity > 0 && latestSellingPrice != sellingPrice;
 
+  /// Low when stock is at or below the item's alert level (or the default).
+  bool isLowStock(int globalDefault) =>
+      quantity > 0 && quantity <= (lowStockThreshold ?? globalDefault);
+
   factory Item.fromMap(Map<String, Object?> m) => Item(
     id: m['id'] as int,
     name: m['name'] as String,

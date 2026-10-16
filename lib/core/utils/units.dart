@@ -21,6 +21,13 @@ class Money {
   static double toDouble(int cents) => cents / 100;
   static String format(int cents, {String symbol = '₱'}) =>
       '$symbol${(cents / 100).toStringAsFixed(2)}';
+
+  /// Turns typed text like "12.50" or "1,200" into centavos. Null if invalid.
+  static int? parse(String text) {
+    final value = double.tryParse(text.trim().replaceAll(',', ''));
+    if (value == null || value < 0) return null;
+    return fromDouble(value);
+  }
 }
 
 /// Quantities are stored in thousandths so kg can have decimals without
@@ -37,5 +44,12 @@ class Qty {
         .replaceFirst(RegExp(r'0+$'), '')
         .replaceFirst(RegExp(r'\.$'), '');
     return '$text ${unit.label}';
+  }
+
+  /// Turns typed text like "0.25" into thousandths. Null if invalid.
+  static int? parse(String text) {
+    final value = double.tryParse(text.trim().replaceAll(',', ''));
+    if (value == null || value < 0) return null;
+    return fromDouble(value);
   }
 }
