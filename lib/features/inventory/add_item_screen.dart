@@ -25,7 +25,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
   ItemUnit _unit = ItemUnit.pcs;
   int? _categoryId;
-  bool _countAsExpense = false;
   bool _saving = false;
 
   static final _numberFilter = FilteringTextInputFormatter.allow(
@@ -108,7 +107,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
         lowStockThreshold: _lowStock.text.trim().isEmpty
             ? null
             : Qty.parse(_lowStock.text),
-        countStartingStockAsExpense: _countAsExpense,
       );
       navigator.pop();
       messenger.showSnackBar(SnackBar(content: Text('Added "$name"')));
@@ -132,7 +130,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
     _categoryId ??= categories
         .firstWhere((c) => c.isDefault, orElse: () => categories.first)
         .id;
-    final hasStartingQty = (Qty.parse(_qty.text) ?? 0) > 0;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Add item')),
@@ -236,21 +233,10 @@ class _AddItemScreenState extends State<AddItemScreen> {
               decoration: _dec(
                 'Starting quantity (optional)',
                 suffix: _unit.label,
+                helper: 'Counts as an expense (buying price × quantity)',
               ),
               validator: _validateQty,
-              onChanged: (_) => setState(() {}),
             ),
-            if (hasStartingQty)
-              CheckboxListTile(
-                value: _countAsExpense,
-                onChanged: (v) => setState(() => _countAsExpense = v ?? false),
-                controlAffinity: ListTileControlAffinity.leading,
-                contentPadding: EdgeInsets.zero,
-                title: const Text('I bought this stock today'),
-                subtitle: const Text(
-                  'Counts as an expense. Leave unchecked if it was already on your shelf.',
-                ),
-              ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _lowStock,

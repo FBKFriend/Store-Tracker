@@ -8,6 +8,8 @@ import '../../data/repositories/category_repository.dart';
 import '../../data/repositories/item_repository.dart';
 import 'add_item_screen.dart';
 import 'category_manager.dart';
+import 'edit_item_screen.dart';
+import 'restock_sheet.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -172,25 +174,41 @@ class _ItemTile extends StatelessWidget {
     return Card(
       margin: EdgeInsets.zero,
       child: ListTile(
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => EditItemScreen(item: item))),
         title: Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Text(lines.join('\n')),
         isThreeLine: lines.length > 1,
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              Qty.format(item.quantity, item.unit),
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: stockColor,
-                fontWeight: FontWeight.w700,
-              ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  Qty.format(item.quantity, item.unit),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: stockColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (status != null)
+                  Text(
+                    status,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: stockColor,
+                    ),
+                  ),
+              ],
             ),
-            if (status != null)
-              Text(
-                status,
-                style: theme.textTheme.labelSmall?.copyWith(color: stockColor),
-              ),
+            const SizedBox(width: 4),
+            IconButton.filledTonal(
+              tooltip: 'Add stock',
+              icon: const Icon(Icons.add),
+              onPressed: () => showRestockSheet(context, item),
+            ),
           ],
         ),
       ),

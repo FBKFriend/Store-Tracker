@@ -44,8 +44,8 @@ class ItemRepository extends ChangeNotifier {
     }
   }
 
-  /// Adds an item. Starting stock becomes the first lot. By default it is NOT
-  /// counted as an expense (it's stock you already had on the shelf).
+  /// Adds an item. Starting stock becomes the first lot and counts as an
+  /// expense (buying price x quantity).
   Future<int> addItem({
     required String name,
     required int categoryId,
@@ -54,7 +54,6 @@ class ItemRepository extends ChangeNotifier {
     required int sellingPrice,
     int? lowStockThreshold,
     int startingQty = 0,
-    bool countStartingStockAsExpense = false,
   }) async {
     final clean = name.trim();
     if (clean.isEmpty) throw DataException('Item name can\'t be empty.');
@@ -100,7 +99,7 @@ class ItemRepository extends ChangeNotifier {
           'qty_remaining': startingQty,
           'buying_price': buyingPrice,
           'selling_price': sellingPrice,
-          'counts_as_expense': countStartingStockAsExpense ? 1 : 0,
+          'counts_as_expense': 1,
           'received_at': now,
         });
         await txn.insert('stock_movements', {

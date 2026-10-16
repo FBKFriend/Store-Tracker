@@ -28,6 +28,13 @@ class Money {
     if (value == null || value < 0) return null;
     return fromDouble(value);
   }
+
+  /// Number only for typing into a field: 1250 -> "12.50".
+  static String plain(int cents) => (cents / 100).toStringAsFixed(2);
+
+  /// Price x quantity (quantity in thousandths), rounded to the nearest centavo.
+  static int lineTotal(int qtyMilli, int priceCents) =>
+      (qtyMilli * priceCents / 1000).round();
 }
 
 /// Quantities are stored in thousandths so kg can have decimals without
@@ -51,5 +58,13 @@ class Qty {
     final value = double.tryParse(text.trim().replaceAll(',', ''));
     if (value == null || value < 0) return null;
     return fromDouble(value);
+  }
+
+  /// Number only for typing into a field: 2500 -> "2.5", 3000 -> "3".
+  static String plain(int milli) {
+    final text = (milli / 1000).toStringAsFixed(3);
+    return text
+        .replaceFirst(RegExp(r'0+$'), '')
+        .replaceFirst(RegExp(r'\.$'), '');
   }
 }
