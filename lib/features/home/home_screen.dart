@@ -7,6 +7,7 @@ import '../../core/widgets/app_logo.dart';
 import '../../data/app_database.dart';
 import '../../data/repositories/category_repository.dart';
 import '../../data/repositories/item_repository.dart';
+import '../debug/debug_data_screen.dart';
 import '../legal/terms_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -70,38 +71,48 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const AppLogo(size: 140),
-            const SizedBox(height: 16),
-            Text(
-              'My Sari-Sari Store',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Text('Mode: ${prefs.authMode.name}'),
-            const SizedBox(height: 32),
-            // TEMPORARY: remove later
-            TextButton(
-              onPressed: () async {
-                await prefs.resetForTesting();
-                if (!context.mounted) return;
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (_) => TermsScreen(prefs: prefs)),
-                );
-              },
-              child: const Text('Reset first-run (testing only)'),
-            ),
-            TextButton(
-              onPressed: () => _selfTest(context),
-              child: const Text('DB self-test (testing only)'),
-            ),
-            TextButton(
-              onPressed: () => _wipeDatabase(context),
-              child: const Text('Wipe database (testing only)'),
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const AppLogo(size: 140),
+              const SizedBox(height: 16),
+              Text(
+                'My Sari-Sari Store',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 8),
+              Text('Mode: ${prefs.authMode.name}'),
+              const SizedBox(height: 32),
+              // TEMPORARY: remove later
+              TextButton(
+                onPressed: () async {
+                  await prefs.resetForTesting();
+                  if (!context.mounted) return;
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (_) => TermsScreen(prefs: prefs),
+                    ),
+                  );
+                },
+                child: const Text('Reset first-run (testing only)'),
+              ),
+              TextButton(
+                onPressed: () => _selfTest(context),
+                child: const Text('DB self-test (testing only)'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const DebugDataScreen()),
+                ),
+                child: const Text('Sales & stock data (testing only)'),
+              ),
+              TextButton(
+                onPressed: () => _wipeDatabase(context),
+                child: const Text('Wipe database (testing only)'),
+              ),
+            ],
+          ),
         ),
       ),
     );
