@@ -15,7 +15,7 @@ class AppDatabase {
   static final AppDatabase instance = AppDatabase._();
 
   static const _dbName = 'sarisari_store.db';
-  static const _dbVersion = 1;
+  static const _dbVersion = 3;
 
   Future<Database>? _opening;
 
@@ -91,10 +91,78 @@ class AppDatabase {
       'sort_order': 0,
       'is_default': 1,
     });
+
+    await _createSalesTables(db);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Later steps add tables/columns here, one block per version number.
+    // Version 2 added customers, sales and utang. Version 3 runs that same
+    // step again, safely (IF NOT EXISTS), for databases that were saved as
+    // version 2 without those tables.
+    if (oldVersion < 3) await _createSalesTables(db);
+  }
+
+  // Customers, sales and utang
+  Future<void> _createSalesTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS customers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+        created_at TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS sales (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        created_at TEXT NOT NULL,
+        total INTEGER NOT NULL,
+        cash_received INTEGER NOT NULL,
+        change_given INTEGER NOT NULL,
+        utang_amount INTEGER NOT NULL DEFAULT 0,
+        customer_id INTEGER REFERENCES customers(id),
+        status TEXT NOT NULL DEFAULT 'completed',
+        void_reason TEXT,
+        voided_at TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS sale_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sale_id INTEGER NOT NULL REFERENCES sales(id),
+        item_id INTEGER NOT NULL REFERENCES items(id),
+        lot_id INTEGER NOT NULL REFERENCES stock_lots(id),
+        item_name TEXT NOT NULL,
+        unit TEXT NOT NULL,
+        qty INTEGER NOT NULL,
+        unit_price INTEGER NOT NULL,
+        unit_cost INTEGER NOT NULL,
+        line_total INTEGER NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS debt_ledger (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        customer_id INTEGER NOT NULL REFERENCES customers(id),
+        sale_id INTEGER REFERENCES sales(id),
+        type TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        note TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_sales_created ON sales(created_at)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_sale_items_sale ON sale_items(sale_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_ledger_customer ON debt_ledger(customer_id)',
+    );
   }
 
   // TEMPORARY: wipes everything, for testing only

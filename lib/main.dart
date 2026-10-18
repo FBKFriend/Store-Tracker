@@ -5,7 +5,9 @@ import 'app.dart';
 import 'core/storage/app_prefs.dart';
 import 'data/app_database.dart';
 import 'data/repositories/category_repository.dart';
+import 'data/repositories/customer_repository.dart';
 import 'data/repositories/item_repository.dart';
+import 'data/repositories/sales_repository.dart';
 import 'features/pos/cart_controller.dart';
 
 Future<void> main() async {
@@ -23,7 +25,18 @@ Future<void> main() async {
           create: (_) => ItemRepository(AppDatabase.instance)..load(),
         ),
         ChangeNotifierProvider(
+          lazy: false,
+          create: (_) => CustomerRepository(AppDatabase.instance)..load(),
+        ),
+        ChangeNotifierProvider(
           create: (context) => CartController(context.read<ItemRepository>()),
+        ),
+        Provider(
+          create: (context) => SalesRepository(
+            AppDatabase.instance,
+            context.read<ItemRepository>(),
+            context.read<CustomerRepository>(),
+          ),
         ),
       ],
       child: StoreApp(prefs: prefs),

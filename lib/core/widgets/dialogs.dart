@@ -41,3 +41,35 @@ Future<bool> showConfirmDialog(
   );
   return result ?? false;
 }
+
+Future<String?> showTextInputDialog(
+  BuildContext context, {
+  required String title,
+  required String label,
+  String initial = '',
+}) {
+  final controller = TextEditingController(text: initial);
+  return showDialog<String>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(title),
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        textCapitalization: TextCapitalization.words,
+        decoration: InputDecoration(labelText: label),
+        onSubmitted: (value) => Navigator.pop(ctx, value),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, controller.text),
+          child: const Text('Save'),
+        ),
+      ],
+    ),
+  );
+}

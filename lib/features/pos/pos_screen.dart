@@ -9,6 +9,7 @@ import '../../data/repositories/category_repository.dart';
 import '../../data/repositories/item_repository.dart';
 import 'cart_controller.dart';
 import 'cart_sheet.dart';
+import 'payment_sheet.dart';
 import 'pos_widgets.dart';
 
 class PosScreen extends StatefulWidget {
@@ -46,6 +47,12 @@ class _PosScreenState extends State<PosScreen> {
       confirmLabel: 'Clear',
     );
     if (ok) cart.clear();
+  }
+
+  Future<void> _charge() async {
+    final result = await showPaymentSheet(context);
+    if (result == null || !mounted) return;
+    await showReceiptDialog(context, result);
   }
 
   @override
@@ -159,11 +166,7 @@ class _PosScreenState extends State<PosScreen> {
       bottomNavigationBar: _CartBar(
         cart: cart,
         onReview: () => showCartSheet(context),
-        onCharge: () => ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Payment is built in the next step (3B).'),
-          ),
-        ),
+        onCharge: _charge,
       ),
     );
   }
