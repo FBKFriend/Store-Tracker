@@ -4,6 +4,7 @@ import '../../core/utils/units.dart';
 import '../app_database.dart';
 import 'customer_repository.dart';
 import 'item_repository.dart';
+import '../models/sale.dart';
 
 class SaleLine {
   final int itemId;
@@ -212,6 +213,137 @@ class SalesRepository {
     await _items.load();
     await _customers.load();
     return result;
+  }
+
+  /// Past sales, newest first. [from] limits how far back to look.
+  Future<List<SaleSummary>> salesList({DateTime? from, int limit = 300}) async {
+    final db = await _db.database;
+    final args = <Object?>[];
+    if (from != null) args.add(from.toIso8601String());
+    final rows = await db.rawQuery('''
+      SELECT s.*, c.name AS customer_name
+      FROM sales s LEFT JOIN customers c ON c.id = s.customer_id
+      ${from != null ? 'WHERE s.created_at >= ?' : ''}
+      ORDER BY s.id DESC
+      LIMIT $limit
+    ''', args);
+    return rows.map(SaleSummary.fromMap).toList();
+  }
+
+  Future<SaleDetail?> saleDetail(int saleId) async {
+    final db = await _db.database;
+    final rows = await db.rawQuery(
+      '''
+      SELECT s.*, c.name AS customer_name
+      FROM sales s LEFT JOIN customers c ON c.id = s.customer_id
+      WHERE s.id = ?
+    ''',
+      [saleId],
+    );
+    if (rows.isEmpty) return null;
+    final lines = await db.query(
+      'sale_items',
+      where: 'sale_id = ?',
+      whereArgs: [saleId],
+      orderBy: 'id',
+    );
+    return SaleDetail(
+      sale: SaleSummary.fromMap(rows.first),
+      lines: lines.map(SaleLineRow.fromMap).toList(),
+    );
+  }
+
+  /// Cancels a sale but keeps it in the history with the reason. Stock goes
+  /// back to the lots it came from, and any utang it created is reversed.
+  Future<void> voidSale({required int saleId, required String reason}) async {
+    final why = reason.trim();
+    if (why.isEmpty) {
+      throw DataException('Please write a reason for voiding this sale.');
+    }
+    final db = await _db.database;
+    final nowText = DateTime.now().toIso8601String();
+
+    await db.transaction((txn) async {
+      final rows = await txn.rawQuery(
+        '''
+        SELECT s.*, c.name AS customer_name
+        FROM sales s LEFT JOIN customers c ON c.id = s.customer_id
+        WHERE s.id = ?
+      ''',
+        [saleId],
+      );
+      if (rows.isEmpty) throw DataException('Sale not found.');
+      final sale = rows.first;
+      if (sale['status'] == 'voided') {
+        throw DataException('This sale is already voided.');
+      }
+
+      final utang = sale['utang_amount'] as int;
+      final customerId = sale['customer_id'] as int?;
+      final hasUtang = utang > 0 && customerId != null;
+
+      // Only reverse up to what the customer still owes
+      if (hasUtang) {
+        final bal = await txn.rawQuery(
+          'SELECT COALESCE(SUM(amount), 0) AS balance FROM debt_ledger WHERE customer_id = ?',
+          [customerId],
+        );
+        final owed = bal.first['balance'] as int;
+        if (owed < utang) {
+          throw DataException(
+            '${sale['customer_name']} now owes ${Money.format(owed)}, which is '
+            'less than the ${Money.format(utang)} this sale put on their utang, '
+            'so they already paid part of it.\n\n'
+            'Refund the difference (${Money.format(utang - owed)}) and record '
+            'it in the Utang tab with Adjust, Add to utang, reason "refund". '
+            'Then void this sale again.',
+          );
+        }
+      }
+
+      // Put the stock back in the lots it came from
+      final lines = await txn.query(
+        'sale_items',
+        where: 'sale_id = ?',
+        whereArgs: [saleId],
+      );
+      for (final l in lines) {
+        await txn.rawUpdate(
+          'UPDATE stock_lots SET qty_remaining = qty_remaining + ? WHERE id = ?',
+          [l['qty'], l['lot_id']],
+        );
+        await txn.insert('stock_movements', {
+          'item_id': l['item_id'],
+          'lot_id': l['lot_id'],
+          'type': 'void_return',
+          'qty_change': l['qty'],
+          'unit_cost': l['unit_cost'],
+          'note': 'Voided sale #$saleId',
+          'created_at': nowText,
+        });
+      }
+
+      if (hasUtang) {
+        await txn.insert('debt_ledger', {
+          'customer_id': customerId,
+          'sale_id': saleId,
+          'type': 'void',
+          'amount': -utang,
+          'note': 'Sale #$saleId voided: $why',
+          'created_at': nowText,
+        });
+      }
+
+      await txn.update(
+        'sales',
+        {'status': 'voided', 'void_reason': why, 'voided_at': nowText},
+        where: 'id = ?',
+        whereArgs: [saleId],
+      );
+    });
+
+    await _items.load();
+    await _customers.load();
   }
 
   // TEMPORARY: a plain-text look at what was saved, for testing

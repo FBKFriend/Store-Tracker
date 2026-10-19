@@ -86,6 +86,8 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
         return e.saleId != null ? 'Sale #${e.saleId} on utang' : 'Charge';
       case 'payment':
         return 'Payment received';
+      case 'void':
+        return 'Sale #${e.saleId} voided';
       default:
         return e.amount >= 0 ? 'Adjustment (added)' : 'Adjustment (reduced)';
     }
@@ -204,6 +206,8 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                             ? Icons.south_west
                             : e.type == 'charge'
                             ? Icons.north_east
+                            : e.type == 'void'
+                            ? Icons.undo
                             : Icons.tune,
                         color: increase
                             ? theme.colorScheme.error
