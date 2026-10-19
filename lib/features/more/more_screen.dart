@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../history/transaction_history_screen.dart';
+import '../settings/settings_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -42,8 +43,10 @@ class MoreScreen extends StatelessWidget {
           _MoreTile(
             icon: Icons.settings_outlined,
             title: 'Settings',
-            subtitle: 'Theme, PIN lock, currency, low-stock alerts',
-            onTap: () => _comingSoon(context),
+            subtitle: 'Theme and low-stock alerts',
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
           ),
         ],
       ),

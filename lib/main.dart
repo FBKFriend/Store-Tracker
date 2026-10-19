@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'app.dart';
+import 'core/settings/settings_controller.dart';
 import 'core/storage/app_prefs.dart';
 import 'data/app_database.dart';
 import 'data/repositories/category_repository.dart';
@@ -16,6 +17,10 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(
+          lazy: false,
+          create: (_) => SettingsController(prefs),
+        ),
         ChangeNotifierProvider(
           lazy: false,
           create: (_) => CategoryRepository(AppDatabase.instance)..load(),
