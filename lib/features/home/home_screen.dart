@@ -16,6 +16,7 @@ import '../../data/repositories/reports_repository.dart';
 import '../debug/debug_data_screen.dart';
 import '../legal/terms_screen.dart';
 import '../reports/expenses_breakdown_screen.dart';
+import '../reports/end_of_day_report_screen.dart';
 import '../reports/profit_breakdown_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -121,6 +122,15 @@ class _HomeScreenState extends State<HomeScreen> {
             const Text('My Sari-Sari Store'),
           ],
         ),
+        actions: [
+          IconButton(
+            tooltip: 'End-of-day report',
+            icon: const Icon(Icons.summarize_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EndOfDayReportScreen()),
+            ),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

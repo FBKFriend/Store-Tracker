@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../history/transaction_history_screen.dart';
+import '../reports/reports_screen.dart';
 import '../settings/settings_screen.dart';
 
 class MoreScreen extends StatelessWidget {
@@ -32,7 +33,8 @@ class MoreScreen extends StatelessWidget {
             icon: Icons.bar_chart_outlined,
             title: 'Reports',
             subtitle: 'Daily summary, expenses vs profit, printable lists',
-            onTap: () => _comingSoon(context),
+            onTap: () => Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const ReportsScreen())),
           ),
           _MoreTile(
             icon: Icons.cloud_upload_outlined,
