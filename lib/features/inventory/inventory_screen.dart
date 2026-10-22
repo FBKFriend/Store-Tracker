@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/settings/settings_controller.dart';
 import '../../core/utils/units.dart';
 import '../../data/models/item.dart';
 import '../../data/repositories/category_repository.dart';
@@ -19,9 +20,6 @@ class InventoryScreen extends StatefulWidget {
 }
 
 class _InventoryScreenState extends State<InventoryScreen> {
-  // TEMPORARY: becomes a Settings option later (thousandths, so 5000 = 5)
-  static const _globalLowStock = 5000;
-
   int? _categoryId; // null = All
   String _query = '';
 
@@ -30,6 +28,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     final theme = Theme.of(context);
     final categories = context.watch<CategoryRepository>().categories;
     final allItems = context.watch<ItemRepository>().items;
+    final lowStockDefault = context.watch<SettingsController>().lowStockDefault;
 
     // If the selected category was just deleted, go back to "All"
     if (_categoryId != null && !categories.any((c) => c.id == _categoryId)) {
@@ -125,7 +124,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                       item: items[index],
                       categoryName:
                           categoryNames[items[index].categoryId] ?? '',
-                      globalLowStock: _globalLowStock,
+                      globalLowStock: lowStockDefault,
                     ),
                   ),
           ),
