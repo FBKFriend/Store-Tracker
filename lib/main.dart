@@ -8,6 +8,7 @@ import 'data/app_database.dart';
 import 'data/repositories/category_repository.dart';
 import 'data/repositories/customer_repository.dart';
 import 'data/repositories/item_repository.dart';
+import 'data/repositories/reports_repository.dart';
 import 'data/repositories/sales_repository.dart';
 import 'features/pos/cart_controller.dart';
 
@@ -43,6 +44,7 @@ Future<void> main() async {
             context.read<CustomerRepository>(),
           ),
         ),
+        Provider(create: (_) => ReportsRepository(AppDatabase.instance)),
       ],
       child: StoreApp(prefs: prefs),
     ),
