@@ -117,3 +117,32 @@ class ExpenseRow {
     kind: m['kind'] as String,
   );
 }
+
+/// A utang payment or manual adjustment, for the end-of-day report.
+class UtangActivityRow {
+  final String customerName;
+
+  /// 'payment' or 'adjustment'
+  final String type;
+
+  /// Centavos. Negative = they owe less (payments always are).
+  final int amount;
+  final String? note;
+  final DateTime createdAt;
+
+  const UtangActivityRow({
+    required this.customerName,
+    required this.type,
+    required this.amount,
+    required this.note,
+    required this.createdAt,
+  });
+
+  factory UtangActivityRow.fromMap(Map<String, Object?> m) => UtangActivityRow(
+    customerName: m['customer_name'] as String,
+    type: m['type'] as String,
+    amount: m['amount'] as int,
+    note: m['note'] as String?,
+    createdAt: DateTime.parse(m['created_at'] as String),
+  );
+}

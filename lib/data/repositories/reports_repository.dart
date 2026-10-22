@@ -109,4 +109,33 @@ class ReportsRepository {
     ''', args);
     return rows.map(ExpenseRow.fromMap).toList();
   }
+
+  /// Sales that were made in the period but later voided: (count, total).
+  Future<(int, int)> voidedSales({DateTime? from, DateTime? to}) async {
+    final db = await _db.database;
+    final (where, args) = _range('s.created_at', from, to);
+    final rows = await db.rawQuery('''
+      SELECT COUNT(*) AS cnt, COALESCE(SUM(s.total), 0) AS total
+      FROM sales s
+      WHERE s.status = 'voided' AND $where
+    ''', args);
+    return (rows.first['cnt'] as int, rows.first['total'] as int);
+  }
+
+  /// Utang payments and manual adjustments in the period, newest first.
+  Future<List<UtangActivityRow>> utangActivity({
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    final db = await _db.database;
+    final (where, args) = _range('d.created_at', from, to);
+    final rows = await db.rawQuery('''
+      SELECT c.name AS customer_name, d.type AS type, d.amount AS amount,
+             d.note AS note, d.created_at AS created_at
+      FROM debt_ledger d JOIN customers c ON c.id = d.customer_id
+      WHERE d.type IN ('payment', 'adjustment') AND $where
+      ORDER BY d.id DESC
+    ''', args);
+    return rows.map(UtangActivityRow.fromMap).toList();
+  }
 }
