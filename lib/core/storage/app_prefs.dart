@@ -11,6 +11,8 @@ class AppPrefs {
   static const _kAuthMode = 'auth_mode';
   static const _kDarkMode = 'dark_mode';
   static const _kLowStock = 'low_stock_default';
+  static const _kStoreName = 'store_name';
+  static const _kStoreNameAsked = 'store_name_asked';
 
   static Future<AppPrefs> load() async =>
       AppPrefs._(await SharedPreferences.getInstance());
@@ -43,6 +45,13 @@ class AppPrefs {
   int get lowStockDefault => _prefs.getInt(_kLowStock) ?? 5000;
   Future<void> setLowStockDefault(int milli) =>
       _prefs.setInt(_kLowStock, milli);
+
+  String get storeName => _prefs.getString(_kStoreName) ?? '';
+  Future<void> setStoreName(String name) => _prefs.setString(_kStoreName, name);
+
+  /// True once the user has seen the "name your store" question.
+  bool get storeNameAsked => _prefs.getBool(_kStoreNameAsked) ?? false;
+  Future<void> markStoreNameAsked() => _prefs.setBool(_kStoreNameAsked, true);
 
   // TEMPORARY: for testing the first-run flow, remove later
   Future<void> resetForTesting() => _prefs.clear();

@@ -96,7 +96,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
     final items = context.watch<ItemRepository>().items;
     final customers = context.watch<CustomerRepository>();
-    final lowDefault = context.watch<SettingsController>().lowStockDefault;
+    final settings = context.watch<SettingsController>();
+    final lowDefault = settings.lowStockDefault;
     final (from, to) = _period.range;
     // Asked again on every rebuild, so numbers refresh after any sale,
     // restock, payment or void (the old numbers stay on screen meanwhile)
@@ -119,7 +120,12 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             const AppLogo(size: 32),
             const SizedBox(width: 8),
-            const Text('My Sari-Sari Store'),
+            Flexible(
+              child: Text(
+                settings.displayStoreName,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
         actions: [
