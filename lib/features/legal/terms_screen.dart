@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/storage/app_prefs.dart';
 import '../../core/widgets/app_logo.dart';
 import '../auth/login_screen.dart';
-import '../shell/main_shell.dart';
+import '../shell/start_flow.dart';
 import 'legal_text.dart';
 
 class TermsScreen extends StatefulWidget {
@@ -22,7 +22,7 @@ class _TermsScreenState extends State<TermsScreen> {
     if (!mounted) return;
     final next = widget.prefs.authMode == AuthMode.none
         ? LoginScreen(prefs: widget.prefs)
-        : MainShell(prefs: widget.prefs);
+        : homeScreenFor(widget.prefs);
     Navigator.of(context)
         .pushReplacement(MaterialPageRoute(builder: (_) => next));
   }

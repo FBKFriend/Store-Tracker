@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/settings/settings_controller.dart';
 import '../../core/utils/units.dart';
+import '../../core/widgets/dialogs.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -17,6 +18,19 @@ class SettingsScreen extends StatelessWidget {
       builder: (_) => _LowStockDialog(current: settings.lowStockDefault),
     );
     if (value != null) await settings.setLowStockDefault(value);
+  }
+
+  Future<void> _editStoreName(
+    BuildContext context,
+    SettingsController settings,
+  ) async {
+    final name = await showTextInputDialog(
+      context,
+      title: 'Store name',
+      label: 'Store name',
+      initial: settings.storeName,
+    );
+    if (name != null) await settings.setStoreName(name);
   }
 
   @override
@@ -37,6 +51,17 @@ class SettingsScreen extends StatelessWidget {
             onChanged: settings.setDark,
           ),
           const _SectionHeader('Store'),
+          ListTile(
+            leading: const Icon(Icons.storefront_outlined),
+            title: const Text('Store name'),
+            subtitle: Text(
+              settings.storeName.trim().isEmpty
+                  ? 'Not set'
+                  : settings.storeName,
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _editStoreName(context, settings),
+          ),
           ListTile(
             leading: const Icon(Icons.notifications_active_outlined),
             title: const Text('Low-stock alert level'),
