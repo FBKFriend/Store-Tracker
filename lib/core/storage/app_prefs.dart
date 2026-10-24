@@ -37,6 +37,9 @@ class AppPrefs {
   Future<void> setAuthMode(AuthMode mode) =>
       _prefs.setString(_kAuthMode, mode.name);
 
+  /// The underlying storage, for the PIN controller.
+  SharedPreferences get raw => _prefs;
+
   // Settings. Light mode is the default.
   bool get isDark => _prefs.getBool(_kDarkMode) ?? false;
   Future<void> setDark(bool value) => _prefs.setBool(_kDarkMode, value);
