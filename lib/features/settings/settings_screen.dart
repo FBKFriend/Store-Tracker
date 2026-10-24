@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/settings/settings_controller.dart';
 import '../../core/utils/units.dart';
 import '../../core/widgets/dialogs.dart';
+import 'pin_settings.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -74,12 +75,7 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => _editLowStock(context, settings),
           ),
           const _SectionHeader('Security'),
-          const ListTile(
-            enabled: false,
-            leading: Icon(Icons.lock_outline),
-            title: Text('PIN lock'),
-            subtitle: Text('Coming soon'),
-          ),
+          const PinSettingsSection(),
         ],
       ),
     );
