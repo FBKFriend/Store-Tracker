@@ -1,12 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../core/auth/google_auth_service.dart';
 import '../../core/storage/app_prefs.dart';
 import '../../core/widgets/app_logo.dart';
+import '../../core/widgets/dialogs.dart';
 import '../shell/start_flow.dart';
 
 class LoginScreen extends StatelessWidget {
   final AppPrefs prefs;
   const LoginScreen({super.key, required this.prefs});
+
+  Future<void> _signInWithGoogle(BuildContext context) async {
+    final auth = context.read<GoogleAuthService>();
+    final navigator = Navigator.of(context);
+    final result = await auth.signIn();
+    if (result.ok) {
+      navigator.pushReplacement(
+        MaterialPageRoute(builder: (_) => homeScreenFor(prefs)),
+      );
+    } else if (!result.cancelled && context.mounted) {
+      await showErrorDialog(context, result.message ?? 'Sign-in failed.');
+    }
+  }
 
   Future<void> _continueAsGuest(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -64,14 +80,7 @@ class LoginScreen extends StatelessWidget {
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.login),
                   label: const Text('Sign in with Google'),
-                  onPressed: () {
-                    // UI only for now, real sign-in comes in the backup step
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Google sign-in is coming soon.'),
-                      ),
-                    );
-                  },
+                  onPressed: () => _signInWithGoogle(context),
                 ),
               ),
               const SizedBox(height: 12),

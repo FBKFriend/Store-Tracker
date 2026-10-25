@@ -13,6 +13,8 @@ class AppPrefs {
   static const _kLowStock = 'low_stock_default';
   static const _kStoreName = 'store_name';
   static const _kStoreNameAsked = 'store_name_asked';
+  static const _kGoogleEmail = 'google_email';
+  static const _kGoogleName = 'google_name';
 
   static Future<AppPrefs> load() async =>
       AppPrefs._(await SharedPreferences.getInstance());
@@ -55,6 +57,22 @@ class AppPrefs {
   /// True once the user has seen the "name your store" question.
   bool get storeNameAsked => _prefs.getBool(_kStoreNameAsked) ?? false;
   Future<void> markStoreNameAsked() => _prefs.setBool(_kStoreNameAsked, true);
+
+  String get googleEmail => _prefs.getString(_kGoogleEmail) ?? '';
+  String get googleName => _prefs.getString(_kGoogleName) ?? '';
+
+  Future<void> setGoogleAccount({
+    required String email,
+    required String name,
+  }) async {
+    await _prefs.setString(_kGoogleEmail, email);
+    await _prefs.setString(_kGoogleName, name);
+  }
+
+  Future<void> clearGoogleAccount() async {
+    await _prefs.remove(_kGoogleEmail);
+    await _prefs.remove(_kGoogleName);
+  }
 
   // TEMPORARY: for testing the first-run flow, remove later
   Future<void> resetForTesting() => _prefs.clear();

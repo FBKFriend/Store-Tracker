@@ -6,6 +6,7 @@ import '../../core/settings/settings_controller.dart';
 import '../../core/utils/units.dart';
 import '../../core/widgets/dialogs.dart';
 import 'pin_settings.dart';
+import 'account_settings.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -41,6 +42,8 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
+          const _SectionHeader('Account'),
+          const AccountSettingsSection(),
           const _SectionHeader('Appearance'),
           SwitchListTile(
             secondary: const Icon(Icons.dark_mode_outlined),
