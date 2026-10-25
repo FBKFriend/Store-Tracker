@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'app.dart';
+import 'core/auth/google_auth_service.dart';
 import 'core/security/pin_controller.dart';
 import 'core/settings/settings_controller.dart';
 import 'core/storage/app_prefs.dart';
@@ -24,6 +25,7 @@ Future<void> main() async {
           create: (_) => SettingsController(prefs),
         ),
         ChangeNotifierProvider(create: (_) => PinController(prefs)),
+        ChangeNotifierProvider(create: (_) => GoogleAuthService(prefs)),
         ChangeNotifierProvider(
           lazy: false,
           create: (_) => CategoryRepository(AppDatabase.instance)..load(),
