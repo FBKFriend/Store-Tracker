@@ -16,6 +16,7 @@ class AppDatabase {
 
   static const _dbName = 'sarisari_store.db';
   static const _dbVersion = 3;
+  static const version = _dbVersion;
 
   Future<Database>? _opening;
 
