@@ -41,4 +41,20 @@ class Fmt {
     if (diff == 1) return 'Yesterday';
     return date(d);
   }
+
+  /// e.g. "just now", "3 hours ago", "yesterday", "6 days ago"
+  static String timeAgo(DateTime d) {
+    final diff = DateTime.now().difference(d);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) {
+      final m = diff.inMinutes;
+      return '$m minute${m == 1 ? '' : 's'} ago';
+    }
+    if (diff.inHours < 24) {
+      final h = diff.inHours;
+      return '$h hour${h == 1 ? '' : 's'} ago';
+    }
+    final days = diff.inDays;
+    return days == 1 ? 'yesterday' : '$days days ago';
+  }
 }

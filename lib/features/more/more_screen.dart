@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../history/transaction_history_screen.dart';
+import '../backup/backup_screen.dart';
 import '../reports/reports_screen.dart';
 import '../settings/settings_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
-
-  void _comingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Coming soon.')));
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +36,8 @@ class MoreScreen extends StatelessWidget {
             icon: Icons.cloud_upload_outlined,
             title: 'Backup',
             subtitle: 'Back up to Google Drive, restore older copies',
-            onTap: () => _comingSoon(context),
+            onTap: () => Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const BackupScreen())),
           ),
           _MoreTile(
             icon: Icons.settings_outlined,

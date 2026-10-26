@@ -15,6 +15,7 @@ class AppPrefs {
   static const _kStoreNameAsked = 'store_name_asked';
   static const _kGoogleEmail = 'google_email';
   static const _kGoogleName = 'google_name';
+  static const _kLastBackup = 'last_backup_at';
 
   static Future<AppPrefs> load() async =>
       AppPrefs._(await SharedPreferences.getInstance());
@@ -73,6 +74,14 @@ class AppPrefs {
     await _prefs.remove(_kGoogleEmail);
     await _prefs.remove(_kGoogleName);
   }
+
+  DateTime? get lastBackupAt {
+    final text = _prefs.getString(_kLastBackup);
+    return text == null ? null : DateTime.tryParse(text);
+  }
+
+  Future<void> setLastBackupAt(DateTime time) =>
+      _prefs.setString(_kLastBackup, time.toIso8601String());
 
   // TEMPORARY: for testing the first-run flow, remove later
   Future<void> resetForTesting() => _prefs.clear();
