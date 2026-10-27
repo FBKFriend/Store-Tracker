@@ -12,7 +12,7 @@ class DriveBackupClient {
 
   static const _filesUrl = 'https://www.googleapis.com/drive/v3/files';
   static const _uploadUrl = 'https://www.googleapis.com/upload/drive/v3/files';
-  static const _fields = 'id,name,createdTime,size,appProperties';
+  static const _fields = 'id,name,createdTime,modifiedTime,size,appProperties';
 
   Future<Map<String, String>> _headers() async {
     final headers = await _auth.authHeaders();
@@ -36,13 +36,13 @@ class DriveBackupClient {
     );
   }
 
-  /// Newest first.
+  /// Most recently updated first.
   Future<List<CloudBackup>> list() async {
     final response = await http.get(
       Uri.parse(_filesUrl).replace(
         queryParameters: {
           'spaces': 'appDataFolder',
-          'orderBy': 'createdTime desc',
+          'orderBy': 'modifiedTime desc',
           'pageSize': '50',
           'fields': 'files($_fields)',
         },
@@ -55,35 +55,59 @@ class DriveBackupClient {
     return files.map(CloudBackup.fromJson).toList();
   }
 
+  // Builds the "details + file content" body Drive expects. Returns the body
+  // and the Content-Type header (which carries the boundary).
+  (String, String) _multipart(Map<String, Object?> metadata, String json) {
+    final boundary = 'sarisari${DateTime.now().microsecondsSinceEpoch}';
+    final body =
+        '--$boundary\r\n'
+        'Content-Type: application/json; charset=UTF-8\r\n\r\n'
+        '${jsonEncode(metadata)}\r\n'
+        '--$boundary\r\n'
+        'Content-Type: application/json; charset=UTF-8\r\n\r\n'
+        '$json\r\n'
+        '--$boundary--';
+    return (body, 'multipart/related; boundary=$boundary');
+  }
+
   Future<CloudBackup> upload({
     required String name,
     required String json,
     required BackupSummary summary,
   }) async {
-    final boundary = 'sarisari${DateTime.now().microsecondsSinceEpoch}';
-    final metadata = jsonEncode({
+    final (body, contentType) = _multipart({
       'name': name,
       'parents': ['appDataFolder'],
       'mimeType': 'application/json',
       'appProperties': summary.toProps(),
-    });
-    final body =
-        '--$boundary\r\n'
-        'Content-Type: application/json; charset=UTF-8\r\n\r\n'
-        '$metadata\r\n'
-        '--$boundary\r\n'
-        'Content-Type: application/json; charset=UTF-8\r\n\r\n'
-        '$json\r\n'
-        '--$boundary--';
-    final headers = <String, String>{
-      ...await _headers(),
-      'Content-Type': 'multipart/related; boundary=$boundary',
-    };
+    }, json);
     final response = await http.post(
       Uri.parse(_uploadUrl).replace(
         queryParameters: {'uploadType': 'multipart', 'fields': _fields},
       ),
-      headers: headers,
+      headers: {...await _headers(), 'Content-Type': contentType},
+      body: utf8.encode(body),
+    );
+    _check(response);
+    return CloudBackup.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
+  }
+
+  /// Replaces the content of an existing backup file.
+  Future<CloudBackup> update({
+    required String id,
+    required String json,
+    required BackupSummary summary,
+  }) async {
+    final (body, contentType) = _multipart({
+      'appProperties': summary.toProps(),
+    }, json);
+    final response = await http.patch(
+      Uri.parse('$_uploadUrl/$id').replace(
+        queryParameters: {'uploadType': 'multipart', 'fields': _fields},
+      ),
+      headers: {...await _headers(), 'Content-Type': contentType},
       body: utf8.encode(body),
     );
     _check(response);

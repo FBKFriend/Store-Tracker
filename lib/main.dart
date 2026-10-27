@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'app.dart';
 import 'core/auth/google_auth_service.dart';
 import 'core/backup/backup_service.dart';
+import 'core/backup/auto_backup_service.dart';
 import 'core/backup/drive_backup_client.dart';
 import 'core/security/pin_controller.dart';
 import 'core/settings/settings_controller.dart';
@@ -62,6 +63,20 @@ Future<void> main() async {
             customers: context.read<CustomerRepository>(),
             clearCart: context.read<CartController>().clear,
           ),
+        ),
+        ChangeNotifierProvider(
+          lazy: false,
+          create: (context) => AutoBackupService(
+            backup: context.read<BackupService>(),
+            auth: context.read<GoogleAuthService>(),
+            prefs: prefs,
+            watch: [
+              context.read<ItemRepository>(),
+              context.read<CategoryRepository>(),
+              context.read<CustomerRepository>(),
+              context.read<SettingsController>(),
+            ],
+          )..start(),
         ),
       ],
       child: StoreApp(prefs: prefs),

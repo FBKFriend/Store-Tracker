@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/settings/settings_controller.dart';
+import '../../core/auth/google_auth_service.dart';
+import '../../core/backup/auto_backup_service.dart';
+import '../../core/backup/backup_service.dart';
+import '../../core/utils/date_format.dart';
 import '../../core/storage/app_prefs.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/units.dart';
@@ -14,6 +18,7 @@ import '../../data/repositories/customer_repository.dart';
 import '../../data/repositories/item_repository.dart';
 import '../../data/repositories/reports_repository.dart';
 import '../debug/debug_data_screen.dart';
+import '../backup/backup_screen.dart';
 import '../legal/terms_screen.dart';
 import '../reports/expenses_breakdown_screen.dart';
 import '../reports/end_of_day_report_screen.dart';
@@ -141,6 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const _BackupStatusRow(),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -511,6 +517,62 @@ class _LowStockCard extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _BackupStatusRow extends StatelessWidget {
+  const _BackupStatusRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final signedIn = context.watch<GoogleAuthService>().isSignedIn;
+    final backup = context.watch<BackupService>();
+    final auto = context.watch<AutoBackupService>();
+    final last = backup.lastBackupAt;
+
+    final IconData icon;
+    final String text;
+    final Color color;
+    if (!signedIn) {
+      icon = Icons.cloud_off;
+      text = 'Not backed up. Your data is only on this phone.';
+      color = AppColors.warning;
+    } else if (backup.busy) {
+      icon = Icons.cloud_sync_outlined;
+      text = 'Backing up...';
+      color = theme.colorScheme.primary;
+    } else if (auto.hasProblem) {
+      icon = Icons.error_outline;
+      text = 'Backup problem. Tap for details.';
+      color = theme.colorScheme.error;
+    } else if (auto.statusText.isNotEmpty) {
+      icon = Icons.cloud_queue;
+      text = auto.statusText;
+      color = AppColors.warning;
+    } else if (last == null) {
+      icon = Icons.cloud_queue;
+      text = 'No backup yet.';
+      color = AppColors.warning;
+    } else {
+      final stale = DateTime.now().difference(last) > const Duration(days: 2);
+      icon = stale ? Icons.cloud_off : Icons.cloud_done_outlined;
+      text = 'Backed up ${Fmt.timeAgo(last)}';
+      color = stale ? AppColors.warning : AppColors.success;
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        dense: true,
+        leading: Icon(icon, color: color),
+        title: Text(text),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () =>
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const BackupScreen())),
       ),
     );
   }
