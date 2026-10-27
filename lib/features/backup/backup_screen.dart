@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth/google_auth_service.dart';
+import '../../core/backup/auto_backup_service.dart';
 import '../../core/backup/backup_models.dart';
 import '../../core/backup/backup_service.dart';
 import '../../core/utils/date_format.dart';
@@ -78,11 +79,11 @@ class _BackupScreenState extends State<BackupScreen> {
       message:
           'This replaces everything on this phone (items, stock, sales, '
           'customers, utang, store name and settings) with the backup from '
-          '${Fmt.dateTime(backup.createdAt)}.\n\n'
+          '${Fmt.dateTime(backup.modifiedAt)}.\n\n'
           'Backup: ${_describe(backup.summary)}\n'
           'This phone now: ${_describe(local)}\n\n'
-          'If your current data is newer, tap Cancel and use "Back up now" '
-          'first. Your PIN is not affected.',
+          'A copy of your current data is saved first, as "Saved before your '
+          'last restore", so you can undo this. Your PIN is not affected.',
       confirmLabel: 'Restore',
     );
     if (!ok || !mounted) return;
@@ -95,11 +96,18 @@ class _BackupScreenState extends State<BackupScreen> {
     if (mounted) _refresh();
   }
 
+  String _label(CloudBackup b, bool isLatest) {
+    if (b.isBeforeRestore) return 'Saved before your last restore';
+    if (isLatest) return 'Latest';
+    return b.isDaily ? 'Daily backup' : 'Earlier backup';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final auth = context.watch<GoogleAuthService>();
     final service = context.watch<BackupService>();
+    final auto = context.watch<AutoBackupService>();
     final busy = service.busy;
     final last = service.lastBackupAt;
 
@@ -175,6 +183,30 @@ class _BackupScreenState extends State<BackupScreen> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                    if (auto.statusText.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                auto.statusText,
+                                style: TextStyle(
+                                  color: auto.hasProblem
+                                      ? theme.colorScheme.error
+                                      : null,
+                                ),
+                              ),
+                            ),
+                            if (auto.hasProblem)
+                              TextButton(
+                                onPressed: auto.retryNow,
+                                child: const Text('Retry'),
+                              ),
+                          ],
+                        ),
+                      ),
                     const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
@@ -187,6 +219,28 @@ class _BackupScreenState extends State<BackupScreen> {
                     ),
                   ],
                 ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              margin: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text('Automatic backup'),
+                    subtitle: const Text(
+                      'Backs up about a minute after you make changes',
+                    ),
+                    value: auto.enabled,
+                    onChanged: auto.setEnabled,
+                  ),
+                  SwitchListTile(
+                    title: const Text('Wi-Fi only'),
+                    subtitle: const Text('Don\'t use mobile data for backups'),
+                    value: auto.wifiOnly,
+                    onChanged: auto.enabled ? auto.setWifiOnly : null,
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
@@ -209,7 +263,7 @@ class _BackupScreenState extends State<BackupScreen> {
               style: theme.textTheme.titleMedium,
             ),
             Text(
-              'The latest ${BackupService.keepCount} are kept.',
+              'One per day, the newest ${BackupService.keepSnapshots} days are kept.',
               style: theme.textTheme.bodySmall,
             ),
             const SizedBox(height: 8),
@@ -246,6 +300,9 @@ class _BackupScreenState extends State<BackupScreen> {
                     child: Text('No backups yet. Tap "Back up now".'),
                   );
                 }
+                final latestIndex = backups.indexWhere(
+                  (b) => !b.isBeforeRestore,
+                );
                 return Column(
                   children: [
                     for (var i = 0; i < backups.length; i++)
@@ -253,13 +310,15 @@ class _BackupScreenState extends State<BackupScreen> {
                         margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
                           isThreeLine: true,
-                          leading: const Icon(Icons.cloud_done_outlined),
-                          title: Text(
-                            '${Fmt.dateTime(backups[i].createdAt)}'
-                            '${i == 0 ? '  ·  Latest' : ''}',
+                          leading: Icon(
+                            backups[i].isBeforeRestore
+                                ? Icons.undo
+                                : Icons.cloud_done_outlined,
                           ),
+                          title: Text(Fmt.dateTime(backups[i].modifiedAt)),
                           subtitle: Text(
-                            '${Fmt.timeAgo(backups[i].createdAt)}\n'
+                            '${_label(backups[i], i == latestIndex)} · '
+                            '${Fmt.timeAgo(backups[i].modifiedAt)}\n'
                             '${_describe(backups[i].summary)}',
                           ),
                           trailing: TextButton(

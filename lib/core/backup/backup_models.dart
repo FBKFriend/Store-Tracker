@@ -50,22 +50,32 @@ class BackupSummary {
 class CloudBackup {
   final String id;
   final String name;
-  final DateTime createdAt;
+
+  /// When the file was last written (today's backup is updated in place).
+  final DateTime modifiedAt;
   final int sizeBytes;
   final BackupSummary summary;
 
   const CloudBackup({
     required this.id,
     required this.name,
-    required this.createdAt,
+    required this.modifiedAt,
     required this.sizeBytes,
     required this.summary,
   });
 
+  /// The copy of your data saved just before the last restore.
+  static const beforeRestoreName = 'before-restore.json';
+
+  bool get isBeforeRestore => name == beforeRestoreName;
+  bool get isDaily => name.startsWith('daily-');
+
   factory CloudBackup.fromJson(Map<String, dynamic> json) => CloudBackup(
     id: json['id'] as String,
     name: json['name'] as String,
-    createdAt: DateTime.parse(json['createdTime'] as String).toLocal(),
+    modifiedAt: DateTime.parse(
+      (json['modifiedTime'] ?? json['createdTime']) as String,
+    ).toLocal(),
     sizeBytes: int.tryParse('${json['size'] ?? 0}') ?? 0,
     summary: BackupSummary.fromProps(
       (json['appProperties'] as Map?)?.cast<String, dynamic>(),

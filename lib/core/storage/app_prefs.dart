@@ -16,6 +16,9 @@ class AppPrefs {
   static const _kGoogleEmail = 'google_email';
   static const _kGoogleName = 'google_name';
   static const _kLastBackup = 'last_backup_at';
+  static const _kBackupHash = 'backup_hash';
+  static const _kAutoBackup = 'auto_backup';
+  static const _kWifiOnly = 'backup_wifi_only';
 
   static Future<AppPrefs> load() async =>
       AppPrefs._(await SharedPreferences.getInstance());
@@ -82,6 +85,19 @@ class AppPrefs {
 
   Future<void> setLastBackupAt(DateTime time) =>
       _prefs.setString(_kLastBackup, time.toIso8601String());
+
+  /// Fingerprint of the data last uploaded to Drive.
+  String get backupHash => _prefs.getString(_kBackupHash) ?? '';
+  Future<void> setBackupHash(String hash) =>
+      _prefs.setString(_kBackupHash, hash);
+
+  bool get autoBackupEnabled => _prefs.getBool(_kAutoBackup) ?? true;
+  Future<void> setAutoBackupEnabled(bool value) =>
+      _prefs.setBool(_kAutoBackup, value);
+
+  bool get backupWifiOnly => _prefs.getBool(_kWifiOnly) ?? false;
+  Future<void> setBackupWifiOnly(bool value) =>
+      _prefs.setBool(_kWifiOnly, value);
 
   // TEMPORARY: for testing the first-run flow, remove later
   Future<void> resetForTesting() => _prefs.clear();
