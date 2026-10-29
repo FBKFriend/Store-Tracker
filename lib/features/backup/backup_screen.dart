@@ -5,6 +5,7 @@ import '../../core/auth/google_auth_service.dart';
 import '../../core/backup/auto_backup_service.dart';
 import '../../core/backup/backup_models.dart';
 import '../../core/backup/backup_service.dart';
+import '../../core/backup/local_backup_file.dart';
 import '../../core/utils/date_format.dart';
 import '../../core/utils/units.dart';
 import '../../core/widgets/dialogs.dart';
@@ -18,23 +19,32 @@ class BackupScreen extends StatefulWidget {
 
 class _BackupScreenState extends State<BackupScreen> {
   late Future<BackupSummary> _local;
+  late Future<(bool, LocalBackupInfo?)> _localFile;
   Future<List<CloudBackup>>? _backups;
 
   @override
   void initState() {
     super.initState();
     _local = context.read<BackupService>().localSummary();
+    _localFile = _loadLocalFile();
     _backups = _fetchBackups();
   }
 
+  Future<(bool, LocalBackupInfo?)> _loadLocalFile() async {
+    if (!await LocalBackupFile.hasAccess()) return (false, null);
+    return (true, await LocalBackupFile.info());
+  }
+
   Future<List<CloudBackup>>? _fetchBackups() {
-    if (!context.read<GoogleAuthService>().isSignedIn) return null;
+    final auth = context.read<GoogleAuthService>();
+    if (!auth.isSignedIn || !auth.hasSession) return null;
     return context.read<BackupService>().listBackups();
   }
 
   void _refresh() {
     setState(() {
       _local = context.read<BackupService>().localSummary();
+      _localFile = _loadLocalFile();
       _backups = _fetchBackups();
     });
   }
@@ -42,6 +52,8 @@ class _BackupScreenState extends State<BackupScreen> {
   String _describe(BackupSummary s) =>
       '${s.items} items · ${s.sales} sales (${Money.format(s.salesTotal)}) · '
       '${s.customers} customers';
+
+  // ---- Google ----
 
   Future<void> _signIn() async {
     final auth = context.read<GoogleAuthService>();
@@ -51,6 +63,19 @@ class _BackupScreenState extends State<BackupScreen> {
       _refresh();
     } else if (!result.cancelled) {
       await showErrorDialog(context, result.message ?? 'Sign-in failed.');
+    }
+  }
+
+  Future<void> _reconnect() async {
+    final auth = context.read<GoogleAuthService>();
+    final autoBackup = context.read<AutoBackupService>();
+    final result = await auth.reconnect();
+    if (!mounted) return;
+    if (result.ok) {
+      autoBackup.retryNow();
+      _refresh();
+    } else if (!result.cancelled) {
+      await showErrorDialog(context, result.message ?? 'Could not reconnect.');
     }
   }
 
@@ -96,6 +121,98 @@ class _BackupScreenState extends State<BackupScreen> {
     if (mounted) _refresh();
   }
 
+  // ---- File on this phone ----
+
+  Future<bool> _ensureStorageAccess() async {
+    if (await LocalBackupFile.hasAccess()) return true;
+    if (!mounted) return false;
+    final ok = await showConfirmDialog(
+      context,
+      title: 'Allow file access?',
+      message:
+          'To save and find your backup file in the Documents folder, '
+          'Android needs you to allow file access for this app. On the next '
+          'screen, switch on "Allow access to manage all files", then come '
+          'back.',
+      confirmLabel: 'Continue',
+    );
+    if (!ok) return false;
+    final granted = await LocalBackupFile.requestAccess();
+    if (!granted && mounted) {
+      await showErrorDialog(
+        context,
+        'File access was not allowed, so the backup file can\'t be used. '
+        'You can allow it in Android Settings → Apps → My Sari-Sari Store.',
+      );
+    }
+    return granted;
+  }
+
+  Future<void> _backUpLocally() async {
+    final service = context.read<BackupService>();
+    final messenger = ScaffoldMessenger.of(context);
+    if (!await _ensureStorageAccess()) {
+      if (mounted) _refresh();
+      return;
+    }
+    try {
+      await LocalBackupFile.write(await service.exportJson());
+      messenger.showSnackBar(
+        SnackBar(content: Text('Saved to ${LocalBackupFile.shortPath}')),
+      );
+    } catch (e) {
+      if (mounted) {
+        await showErrorDialog(context, 'Could not save the file: $e');
+      }
+    }
+    if (mounted) _refresh();
+  }
+
+  Future<void> _restoreFromFile() async {
+    final service = context.read<BackupService>();
+    final auth = context.read<GoogleAuthService>();
+    final messenger = ScaffoldMessenger.of(context);
+    if (!await _ensureStorageAccess()) {
+      if (mounted) _refresh();
+      return;
+    }
+    final info = await LocalBackupFile.info();
+    if (!mounted) return;
+    if (info == null) {
+      await showErrorDialog(
+        context,
+        'No backup file was found in ${LocalBackupFile.shortPath}.',
+      );
+      return;
+    }
+    final current = await service.localSummary();
+    if (!mounted) return;
+    final canUndo = auth.isSignedIn && auth.hasSession;
+    final ok = await showConfirmDialog(
+      context,
+      title: 'Restore from the file?',
+      message:
+          'This replaces everything on this phone with the file saved '
+          '${Fmt.dateTime(info.savedAt)}.\n\n'
+          'File: ${_describe(info.summary)}\n'
+          'This phone now: ${_describe(current)}\n\n'
+          '${canUndo ? 'A copy of your current data is saved to Google Drive first, so you can undo this.' : 'This can\'t be undone, so anything newer than the file will be lost.'}',
+      confirmLabel: 'Restore',
+    );
+    if (!ok || !mounted) return;
+    try {
+      final text = await LocalBackupFile.read();
+      if (text == null) throw BackupException('The file could not be read.');
+      await service.restoreFromText(text, safetyCopy: canUndo);
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Restored from the backup file.')),
+      );
+    } on BackupException catch (e) {
+      if (mounted) await showErrorDialog(context, e.message);
+    }
+    if (mounted) _refresh();
+  }
+
   String _label(CloudBackup b, bool isLatest) {
     if (b.isBeforeRestore) return 'Saved before your last restore';
     if (isLatest) return 'Latest';
@@ -115,12 +232,11 @@ class _BackupScreenState extends State<BackupScreen> {
       appBar: AppBar(
         title: const Text('Backup'),
         actions: [
-          if (auth.isSignedIn)
-            IconButton(
-              tooltip: 'Refresh',
-              icon: const Icon(Icons.refresh),
-              onPressed: busy ? null : _refresh,
-            ),
+          IconButton(
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh),
+            onPressed: busy ? null : _refresh,
+          ),
         ],
       ),
       body: ListView(
@@ -140,7 +256,7 @@ class _BackupScreenState extends State<BackupScreen> {
                         Icon(Icons.cloud_off, color: theme.colorScheme.error),
                         const SizedBox(width: 8),
                         Text(
-                          'Not backed up',
+                          'Not backed up online',
                           style: theme.textTheme.titleMedium,
                         ),
                       ],
@@ -150,7 +266,8 @@ class _BackupScreenState extends State<BackupScreen> {
                       'You\'re using the app as a guest, so your data is only '
                       'on this phone. It could be lost if the phone is lost or '
                       'damaged, or the app is deleted. Sign in with Google to '
-                      'back up to your own Google Drive.',
+                      'back up to your own Google Drive, or save a backup '
+                      'file on this phone below.',
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
@@ -186,37 +303,39 @@ class _BackupScreenState extends State<BackupScreen> {
                     if (auto.statusText.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                auto.statusText,
-                                style: TextStyle(
-                                  color: auto.hasProblem
-                                      ? theme.colorScheme.error
-                                      : null,
-                                ),
-                              ),
-                            ),
-                            if (auto.hasProblem)
-                              TextButton(
-                                onPressed: auto.retryNow,
-                                child: const Text('Retry'),
-                              ),
-                          ],
+                        child: Text(
+                          auto.statusText,
+                          style: TextStyle(
+                            color: auto.hasProblem
+                                ? theme.colorScheme.error
+                                : null,
+                          ),
                         ),
                       ),
                     const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
                       height: 48,
-                      child: FilledButton.icon(
-                        onPressed: busy ? null : _backUp,
-                        icon: const Icon(Icons.cloud_upload_outlined),
-                        label: const Text('Back up now'),
-                      ),
+                      child: auth.hasSession
+                          ? FilledButton.icon(
+                              onPressed: busy ? null : _backUp,
+                              icon: const Icon(Icons.cloud_upload_outlined),
+                              label: const Text('Back up now'),
+                            )
+                          : FilledButton.icon(
+                              onPressed: _reconnect,
+                              icon: const Icon(Icons.link),
+                              label: const Text('Reconnect to Google'),
+                            ),
                     ),
+                    if (!auth.hasSession)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          'If asked, choose ${auth.email}.',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -243,20 +362,94 @@ class _BackupScreenState extends State<BackupScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            Card(
-              margin: EdgeInsets.zero,
-              child: ListTile(
-                leading: const Icon(Icons.phone_android),
-                title: const Text('On this phone'),
-                subtitle: FutureBuilder<BackupSummary>(
-                  future: _local,
-                  builder: (context, snapshot) => Text(
-                    snapshot.hasData ? _describe(snapshot.data!) : '...',
-                  ),
-                ),
+          ],
+          const SizedBox(height: 12),
+          Card(
+            margin: EdgeInsets.zero,
+            child: ListTile(
+              leading: const Icon(Icons.phone_android),
+              title: const Text('On this phone'),
+              subtitle: FutureBuilder<BackupSummary>(
+                future: _local,
+                builder: (context, snapshot) =>
+                    Text(snapshot.hasData ? _describe(snapshot.data!) : '...'),
               ),
             ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            margin: EdgeInsets.zero,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.folder_outlined),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Backup file on this phone',
+                        style: theme.textTheme.titleMedium,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  FutureBuilder<(bool, LocalBackupInfo?)>(
+                    future: _localFile,
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return const Text('...');
+                      final (access, info) = snapshot.data!;
+                      if (!access) {
+                        return const Text(
+                          'File access isn\'t allowed yet. It will be asked '
+                          'when you use the buttons below.',
+                        );
+                      }
+                      if (info == null) {
+                        return const Text('No backup file yet.');
+                      }
+                      return Text(
+                        'Saved ${Fmt.dateTime(info.savedAt)} '
+                        '(${Fmt.timeAgo(info.savedAt)})\n'
+                        '${_describe(info.summary)}',
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    LocalBackupFile.shortPath,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.tonal(
+                          onPressed: busy ? null : _backUpLocally,
+                          child: const Text('Back up locally'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: busy ? null : _restoreFromFile,
+                          child: const Text('Restore from file'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Anyone who can open your phone\'s files can read this file. '
+                    'The PIN lock does not protect it.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (auth.isSignedIn && auth.hasSession) ...[
             const SizedBox(height: 20),
             Text(
               'Backups in your Google Drive',

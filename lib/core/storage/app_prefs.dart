@@ -19,6 +19,7 @@ class AppPrefs {
   static const _kBackupHash = 'backup_hash';
   static const _kAutoBackup = 'auto_backup';
   static const _kWifiOnly = 'backup_wifi_only';
+  static const _kDataCheckDone = 'data_check_done';
 
   static Future<AppPrefs> load() async =>
       AppPrefs._(await SharedPreferences.getInstance());
@@ -98,6 +99,10 @@ class AppPrefs {
   bool get backupWifiOnly => _prefs.getBool(_kWifiOnly) ?? false;
   Future<void> setBackupWifiOnly(bool value) =>
       _prefs.setBool(_kWifiOnly, value);
+
+  /// True once the first-open check for saved data has run.
+  bool get dataCheckDone => _prefs.getBool(_kDataCheckDone) ?? false;
+  Future<void> markDataCheckDone() => _prefs.setBool(_kDataCheckDone, true);
 
   // TEMPORARY: for testing the first-run flow, remove later
   Future<void> resetForTesting() => _prefs.clear();

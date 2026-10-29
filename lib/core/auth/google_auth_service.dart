@@ -31,6 +31,13 @@ class GoogleAuthService extends ChangeNotifier {
 
   bool _initialized = false;
   GoogleSignInAccount? _account;
+  bool _sessionChecked = false;
+
+  /// True when the app is connected to the Google account right now.
+  bool get hasSession => _account != null;
+
+  /// True once the app has tried to reconnect since it was opened.
+  bool get sessionChecked => _sessionChecked;
 
   bool get isSignedIn => _prefs.authMode == AuthMode.google;
   String get email => _prefs.googleEmail;
@@ -61,6 +68,7 @@ class GoogleAuthService extends ChangeNotifier {
         await account.authorizationClient.authorizeScopes(_scopes);
       }
       _account = account;
+      _sessionChecked = true;
       await _prefs.setGoogleAccount(
         email: account.email,
         name: account.displayName ?? '',
@@ -85,15 +93,76 @@ class GoogleAuthService extends ChangeNotifier {
       // Signing out locally is what matters
     }
     _account = null;
+    _sessionChecked = false;
     await _prefs.clearGoogleAccount();
     await _prefs.setAuthMode(AuthMode.guest);
     notifyListeners();
   }
 
-  /// Headers for calling the Drive API, or null if not signed in / no access.
+  /// Reconnects after the app was reopened. Android may show an account
+  /// chooser. Only the account this phone is signed in with is accepted.
+  Future<bool> restoreSession() async {
+    if (!isSignedIn) return false;
+    if (_account != null) return true;
+    var ok = false;
+    try {
+      await _ensureInitialized();
+      final account = await GoogleSignIn.instance
+          .attemptLightweightAuthentication();
+      ok = _accept(account);
+    } catch (_) {
+      ok = false;
+    }
+    if (!ok) {
+      _sessionChecked = true;
+      notifyListeners();
+    }
+    return ok;
+  }
+
+  bool _accept(GoogleSignInAccount? account) {
+    if (account == null) return false;
+    if (account.email.toLowerCase() != _prefs.googleEmail.toLowerCase()) {
+      return false; // a different Google account was chosen
+    }
+    _account = account;
+    _sessionChecked = true;
+    notifyListeners();
+    return true;
+  }
+
+  /// Connects again by choosing the account (the Reconnect button).
+  Future<AuthResult> reconnect() async {
+    if (await restoreSession()) return const AuthResult.success();
+    try {
+      await _ensureInitialized();
+      final account = await GoogleSignIn.instance.authenticate(
+        scopeHint: _scopes,
+      );
+      if (!_accept(account)) {
+        return AuthResult.failed(
+          'Please choose ${_prefs.googleEmail}. That is the account this '
+          'phone is signed in with.',
+        );
+      }
+      final granted = await account.authorizationClient.authorizationForScopes(
+        _scopes,
+      );
+      if (granted == null) {
+        await account.authorizationClient.authorizeScopes(_scopes);
+      }
+      return const AuthResult.success();
+    } on GoogleSignInException catch (e) {
+      if (e.code.name == 'canceled') return const AuthResult.cancelled();
+      return AuthResult.failed(e.description ?? e.code.name);
+    } catch (e) {
+      return AuthResult.failed('$e');
+    }
+  }
+
+  /// Headers for calling the Drive API, or null if not connected.
   Future<Map<String, String>?> authHeaders() async {
-    await _ensureInitialized();
-    _account ??= await GoogleSignIn.instance.attemptLightweightAuthentication();
+    await restoreSession(); // does nothing if already connected
     final account = _account;
     if (account == null) return null;
     return account.authorizationClient.authorizationHeaders(_scopes);

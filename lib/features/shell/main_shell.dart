@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../core/auth/google_auth_service.dart';
 import '../../core/storage/app_prefs.dart';
 import '../home/home_screen.dart';
 import '../inventory/inventory_screen.dart';
@@ -19,6 +21,15 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   // 0 Home, 1 Inventory, 2 POS, 3 Utang, 4 More
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Reconnect to Google once per app start (Android may ask which account)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<GoogleAuthService>().restoreSession();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

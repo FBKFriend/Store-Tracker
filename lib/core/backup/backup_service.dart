@@ -147,6 +147,9 @@ class BackupService extends ChangeNotifier {
     return _Built(json, hash, summary);
   }
 
+  /// The full backup as text, for saving to a file on the phone.
+  Future<String> exportJson() async => (await _build()).json;
+
   // Creates the file in Drive, or updates it if it's already there
   Future<void> _write(String name, _Built built) async {
     final existing = (await _drive.list()).where((b) => b.name == name);
@@ -211,11 +214,22 @@ class BackupService extends ChangeNotifier {
 
   /// Replaces everything on this phone with the chosen backup. A copy of the
   /// current data is saved to Drive first, so a restore can be undone.
-  Future<void> restore(CloudBackup backup) async {
+  Future<void> restore(CloudBackup backup) =>
+      _restoreFrom(() => _drive.download(backup.id), safetyCopy: true);
+
+  /// Restores from the text of a backup file saved on this phone.
+  /// [safetyCopy] saves the current data to Drive first (needs Google).
+  Future<void> restoreFromText(String text, {required bool safetyCopy}) =>
+      _restoreFrom(() async => text, safetyCopy: safetyCopy);
+
+  Future<void> _restoreFrom(
+    Future<String> Function() getText, {
+    required bool safetyCopy,
+  }) async {
     if (_busy) throw BackupException('A backup or restore is already running.');
     _setBusy(true);
     try {
-      final text = await _drive.download(backup.id);
+      final text = await getText();
       final data = jsonDecode(text);
       if (data is! Map<String, dynamic> || data['format'] != _format) {
         throw BackupException('That file is not a My Sari-Sari Store backup.');
@@ -240,7 +254,8 @@ class BackupService extends ChangeNotifier {
 
       // Safety copy of what's on the phone now (skipped on an empty phone)
       final local = await localSummary();
-      if (local.items > 0 || local.sales > 0 || local.customers > 0) {
+      if (safetyCopy &&
+          (local.items > 0 || local.sales > 0 || local.customers > 0)) {
         try {
           await _write(CloudBackup.beforeRestoreName, await _build());
         } catch (e) {
