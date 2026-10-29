@@ -18,7 +18,7 @@ class DriveBackupClient {
     final headers = await _auth.authHeaders();
     if (headers == null) {
       throw BackupException(
-        'Google Drive access is missing. Sign out and sign in again.',
+        'Not connected to Google. Open More → Backup and tap Reconnect.',
       );
     }
     return headers;

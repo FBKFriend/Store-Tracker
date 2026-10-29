@@ -110,6 +110,17 @@ class AutoBackupService extends ChangeNotifier with WidgetsBindingObserver {
     }
     _running = true;
     try {
+      if (!_auth.hasSession) {
+        if (_auth.sessionChecked) {
+          _setStatus(
+            'Backup paused. Open More → Backup and tap Reconnect.',
+            true,
+          );
+        } else {
+          _setStatus('Reconnecting to Google...', false);
+        }
+        return;
+      }
       final results = await Connectivity().checkConnectivity();
       final online = results.any((r) => r != ConnectivityResult.none);
       if (!online) {
