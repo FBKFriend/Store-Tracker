@@ -110,6 +110,10 @@ class AutoBackupService extends ChangeNotifier with WidgetsBindingObserver {
     }
     _running = true;
     try {
+      if (_prefs.cloudCheckPending) {
+        _setStatus('Waiting for you to choose which data to keep.', false);
+        return;
+      }
       if (!_auth.hasSession) {
         if (_auth.sessionChecked) {
           _setStatus(

@@ -9,6 +9,7 @@ import '../../core/backup/local_backup_file.dart';
 import '../../core/utils/date_format.dart';
 import '../../core/utils/units.dart';
 import '../../core/widgets/dialogs.dart';
+import 'cloud_check.dart';
 
 class BackupScreen extends StatefulWidget {
   const BackupScreen({super.key});
@@ -60,7 +61,8 @@ class _BackupScreenState extends State<BackupScreen> {
     final result = await auth.signIn();
     if (!mounted) return;
     if (result.ok) {
-      _refresh();
+      await resolveCloudData(context);
+      if (mounted) _refresh();
     } else if (!result.cancelled) {
       await showErrorDialog(context, result.message ?? 'Sign-in failed.');
     }

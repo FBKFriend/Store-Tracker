@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/auth/google_auth_service.dart';
 import '../../core/storage/app_prefs.dart';
+import '../backup/cloud_check.dart';
 import '../home/home_screen.dart';
 import '../inventory/inventory_screen.dart';
 import '../more/more_screen.dart';
@@ -26,8 +27,14 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     // Reconnect to Google once per app start (Android may ask which account)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<GoogleAuthService>().restoreSession();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final connected = await context
+          .read<GoogleAuthService>()
+          .restoreSession();
+      if (!mounted) return;
+      if (connected && widget.prefs.cloudCheckPending) {
+        await resolveCloudData(context);
+      }
     });
   }
 

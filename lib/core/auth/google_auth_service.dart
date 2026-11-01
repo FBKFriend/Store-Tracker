@@ -74,6 +74,7 @@ class GoogleAuthService extends ChangeNotifier {
         name: account.displayName ?? '',
       );
       await _prefs.setAuthMode(AuthMode.google);
+      await _prefs.setCloudCheckPending(true);
       notifyListeners();
       return const AuthResult.success();
     } on GoogleSignInException catch (e) {
@@ -96,6 +97,7 @@ class GoogleAuthService extends ChangeNotifier {
     _sessionChecked = false;
     await _prefs.clearGoogleAccount();
     await _prefs.setAuthMode(AuthMode.guest);
+    await _prefs.setCloudCheckPending(false);
     notifyListeners();
   }
 
@@ -150,6 +152,31 @@ class GoogleAuthService extends ChangeNotifier {
       );
       if (granted == null) {
         await account.authorizationClient.authorizeScopes(_scopes);
+      }
+      return const AuthResult.success();
+    } on GoogleSignInException catch (e) {
+      if (e.code.name == 'canceled') return const AuthResult.cancelled();
+      return AuthResult.failed(e.description ?? e.code.name);
+    } catch (e) {
+      return AuthResult.failed('$e');
+    }
+  }
+
+  /// Asks the user to choose their Google account again, to prove it's them
+  /// (used to reset a forgotten PIN).
+  Future<AuthResult> verifyIdentity() async {
+    if (!isSignedIn) {
+      return const AuthResult.failed(
+        'This phone is not signed in with Google.',
+      );
+    }
+    try {
+      await _ensureInitialized();
+      final account = await GoogleSignIn.instance.authenticate(
+        scopeHint: _scopes,
+      );
+      if (account.email.toLowerCase() != _prefs.googleEmail.toLowerCase()) {
+        return AuthResult.failed('Please choose ${_prefs.googleEmail}.');
       }
       return const AuthResult.success();
     } on GoogleSignInException catch (e) {

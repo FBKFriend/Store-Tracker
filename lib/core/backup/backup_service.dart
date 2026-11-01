@@ -111,6 +111,24 @@ class BackupService extends ChangeNotifier {
     );
   }
 
+  /// The most recent thing recorded on this phone (a sale, restock, payment...).
+  Future<DateTime?> localLastActivity() async {
+    final database = await _db.database;
+    final rows = await database.rawQuery('''
+      SELECT MAX(t) AS latest FROM (
+        SELECT MAX(created_at) AS t FROM sales
+        UNION ALL SELECT MAX(voided_at) FROM sales
+        UNION ALL SELECT MAX(received_at) FROM stock_lots
+        UNION ALL SELECT MAX(created_at) FROM stock_movements
+        UNION ALL SELECT MAX(created_at) FROM debt_ledger
+        UNION ALL SELECT MAX(created_at) FROM items
+        UNION ALL SELECT MAX(created_at) FROM customers
+      )
+    ''');
+    final text = rows.first['latest'] as String?;
+    return text == null ? null : DateTime.tryParse(text);
+  }
+
   Future<List<CloudBackup>> listBackups() async {
     try {
       return await _drive.list();
@@ -177,6 +195,14 @@ class BackupService extends ChangeNotifier {
     try {
       final built = await _build();
       final now = DateTime.now();
+      if (built.summary.isEmpty) {
+        if (force) {
+          throw BackupException(
+            'There is no data on this phone to back up yet.',
+          );
+        }
+        return false;
+      }
       if (!force && built.hash == _prefs.backupHash) {
         // Drive already has exactly this data
         await _prefs.setLastBackupAt(now);

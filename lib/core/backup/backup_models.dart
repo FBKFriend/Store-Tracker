@@ -20,6 +20,9 @@ class BackupSummary {
     required this.customers,
   });
 
+  /// True when there is nothing worth backing up.
+  bool get isEmpty => items == 0 && sales == 0 && customers == 0;
+
   // Drive stores these as text, next to the file
   Map<String, String> toProps() => {
     'items': '$items',
