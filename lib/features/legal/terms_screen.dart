@@ -4,7 +4,7 @@ import '../../core/storage/app_prefs.dart';
 import '../../core/widgets/app_logo.dart';
 import '../auth/login_screen.dart';
 import '../shell/start_flow.dart';
-import 'legal_text.dart';
+import 'legal_content.dart';
 
 class TermsScreen extends StatefulWidget {
   final AppPrefs prefs;
@@ -25,27 +25,6 @@ class _TermsScreenState extends State<TermsScreen> {
         : homeScreenFor(widget.prefs);
     Navigator.of(context)
         .pushReplacement(MaterialPageRoute(builder: (_) => next));
-  }
-
-  Widget _section(ThemeData theme, String title, List<String> points) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: theme.textTheme.titleMedium),
-        const SizedBox(height: 8),
-        for (final p in points)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('•  '),
-                Expanded(child: Text(p, style: theme.textTheme.bodyMedium)),
-              ],
-            ),
-          ),
-      ],
-    );
   }
 
   @override
@@ -72,16 +51,7 @@ class _TermsScreenState extends State<TermsScreen> {
                   child: Scrollbar(
                     child: ListView(
                       padding: const EdgeInsets.all(16),
-                      children: [
-                        _section(theme, 'Privacy', LegalText.privacyPoints),
-                        const SizedBox(height: 16),
-                        _section(theme, 'Terms of use', LegalText.termsPoints),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Last updated: ${LegalText.lastUpdated}',
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
+                      children: const [LegalContent()],
                     ),
                   ),
                 ),

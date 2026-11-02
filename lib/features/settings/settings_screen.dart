@@ -6,6 +6,7 @@ import '../../core/settings/settings_controller.dart';
 import '../../core/utils/units.dart';
 import '../../core/widgets/dialogs.dart';
 import 'pin_settings.dart';
+import '../legal/legal_screen.dart';
 import 'account_settings.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -79,6 +80,14 @@ class SettingsScreen extends StatelessWidget {
           ),
           const _SectionHeader('Security'),
           const PinSettingsSection(),
+          const _SectionHeader('About'),
+          ListTile(
+            leading: const Icon(Icons.policy_outlined),
+            title: const Text('Privacy & Terms'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const LegalScreen())),
+          ),
         ],
       ),
     );
