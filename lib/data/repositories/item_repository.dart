@@ -305,15 +305,4 @@ class ItemRepository extends ChangeNotifier {
     );
     await load();
   }
-
-  // TEMPORARY: for testing, remove later
-  Future<List<Map<String, Object?>>> debugLots(int itemId) async {
-    final db = await _db.database;
-    return db.query(
-      'stock_lots',
-      where: 'item_id = ?',
-      whereArgs: [itemId],
-      orderBy: 'id',
-    );
-  }
 }

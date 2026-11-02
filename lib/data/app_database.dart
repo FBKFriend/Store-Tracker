@@ -165,13 +165,4 @@ class AppDatabase {
       'CREATE INDEX IF NOT EXISTS idx_ledger_customer ON debt_ledger(customer_id)',
     );
   }
-
-  // TEMPORARY: wipes everything, for testing only
-  Future<void> deleteForTesting() async {
-    if (_opening != null) {
-      await (await _opening!).close();
-      _opening = null;
-    }
-    await deleteDatabase(p.join(await getDatabasesPath(), _dbName));
-  }
 }

@@ -109,7 +109,4 @@ class AppPrefs {
   bool get cloudCheckPending => _prefs.getBool(_kCloudPending) ?? false;
   Future<void> setCloudCheckPending(bool value) =>
       _prefs.setBool(_kCloudPending, value);
-
-  // TEMPORARY: for testing the first-run flow, remove later
-  Future<void> resetForTesting() => _prefs.clear();
 }

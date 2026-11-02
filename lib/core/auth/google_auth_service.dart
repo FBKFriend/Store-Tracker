@@ -1,8 +1,5 @@
-import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:http/http.dart' as http;
 
 import '../storage/app_prefs.dart';
 
@@ -193,29 +190,5 @@ class GoogleAuthService extends ChangeNotifier {
     final account = _account;
     if (account == null) return null;
     return account.authorizationClient.authorizationHeaders(_scopes);
-  }
-
-  // TEMPORARY: checks that the app can reach its private Drive folder
-  Future<String> testDriveConnection() async {
-    try {
-      final headers = await authHeaders();
-      if (headers == null) {
-        return 'Not signed in, or Drive access was not granted.';
-      }
-      final response = await http.get(
-        Uri.parse(
-          'https://www.googleapis.com/drive/v3/files'
-          '?spaces=appDataFolder&fields=files(id,name)',
-        ),
-        headers: headers,
-      );
-      if (response.statusCode == 200) {
-        final files = (jsonDecode(response.body)['files'] as List).length;
-        return 'Drive connection works.\nBackup files found: $files';
-      }
-      return 'Drive answered ${response.statusCode}:\n${response.body}';
-    } catch (e) {
-      return 'Failed: $e';
-    }
   }
 }

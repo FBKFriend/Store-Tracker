@@ -33,26 +33,6 @@ class AccountSettingsSection extends StatelessWidget {
     if (ok) await auth.signOut();
   }
 
-  // TEMPORARY: remove later
-  Future<void> _testDrive(BuildContext context) async {
-    final auth = context.read<GoogleAuthService>();
-    final text = await auth.testDriveConnection();
-    if (!context.mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Drive test'),
-        content: SingleChildScrollView(child: SelectableText(text)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<GoogleAuthService>();
@@ -79,11 +59,6 @@ class AccountSettingsSection extends StatelessWidget {
             onPressed: () => _signOut(context),
             child: const Text('Sign out'),
           ),
-        ),
-        ListTile(
-          leading: const Icon(Icons.cloud_sync_outlined),
-          title: const Text('Test Drive connection (testing only)'),
-          onTap: () => _testDrive(context),
         ),
       ],
     );
