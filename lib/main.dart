@@ -23,6 +23,7 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
+        Provider<AppPrefs>.value(value: prefs),
         ChangeNotifierProvider(
           lazy: false,
           create: (_) => SettingsController(prefs),
