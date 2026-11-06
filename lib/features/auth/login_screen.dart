@@ -5,6 +5,7 @@ import '../../core/auth/google_auth_service.dart';
 import '../../core/storage/app_prefs.dart';
 import '../../core/widgets/app_logo.dart';
 import '../../core/widgets/dialogs.dart';
+import '../../core/widgets/google_sign_in_button.dart';
 import '../shell/start_flow.dart';
 
 class LoginScreen extends StatelessWidget {
@@ -75,14 +76,7 @@ class LoginScreen extends StatelessWidget {
                 style: theme.textTheme.bodyMedium,
               ),
               const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.login),
-                  label: const Text('Sign in with Google'),
-                  onPressed: () => _signInWithGoogle(context),
-                ),
-              ),
+              GoogleSignInButton(onPressed: () => _signInWithGoogle(context)),
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,

@@ -9,6 +9,7 @@ import '../../core/backup/local_backup_file.dart';
 import '../../core/utils/date_format.dart';
 import '../../core/utils/units.dart';
 import '../../core/widgets/dialogs.dart';
+import '../../core/widgets/google_sign_in_button.dart';
 import 'cloud_check.dart';
 
 class BackupScreen extends StatefulWidget {
@@ -272,13 +273,7 @@ class _BackupScreenState extends State<BackupScreen> {
                       'file on this phone below.',
                     ),
                     const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: _signIn,
-                        child: const Text('Sign in with Google'),
-                      ),
-                    ),
+                    GoogleSignInButton(onPressed: _signIn),
                   ],
                 ),
               ),
