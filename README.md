@@ -52,4 +52,6 @@ Made by Denmark Angelo C. Dela Cruz as a student project.
  
 ## License
  
-No license has been chosen yet, so all rights are reserved by default.
+MIT License
+
+Copyright (c) 2026 FBKFriend
